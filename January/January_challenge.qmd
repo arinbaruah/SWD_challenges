@@ -123,6 +123,7 @@ upset(fromExpression(input),
 
 ```{r}
 df <- read_csv("data/goodreads_top100.csv")
+
 ```
 
 ```{r}
@@ -156,32 +157,52 @@ print(result_df)
 DF <- as.data.frame(unclass(result_df),stringsAsFactors=TRUE)
 df <- cbind(df,DF)
 
+df <- df %>% select(-c(Genres,Description,Series,`Release number`,Author,`Num Pages`,`Publication Date`,Rating,...1))
 ```
 
 ```{r}
 
 col_name <- c("Book","V1","V2","V3","V4","V5","V6","V7")
+categorical_columns <- c("V1","V2","V3","V4","V5","V6","V7")
 df_compact <- df %>% select(all_of(col_name))
-
 
 df_long <- df_compact %>% pivot_longer(cols = c("V1","V2","V3","V4","V5","V6","V7"),values_to = "Genre")
 
-df_new <- as.data.frame(one_hot(data.table(df_compact),cols = c("V1","V2","V3","V4","V5","V6","V7")))
+dummy_variables <- lapply(categorical_columns, function(column) {
+  levels <- unique(df_compact[[column]])
+  dummy_matrix <- sapply(levels, function(level) as.integer(df_compact[[column]] == level))
+  colnames(dummy_matrix) <- paste0(column, "_", levels)
+  return(dummy_matrix)
+})
+
+
+encoded_data <- cbind(df_compact,dummy_variables)
+
+# Print the result
+print(encoded_data)
+
 ```
+
+
+
+
+
 
 
 ```{r}
-names(df_new) = gsub(pattern = "V1_*", replacement = "", x = names(df_new))
-names(df_new) = gsub(pattern = "V2_*", replacement = "", x = names(df_new))
-names(df_new) = gsub(pattern = "V3_*", replacement = "", x = names(df_new))
-names(df_new) = gsub(pattern = "V4_*", replacement = "", x = names(df_new))
-names(df_new) = gsub(pattern = "V5_*", replacement = "", x = names(df_new))
-names(df_new) = gsub(pattern = "V6_*", replacement = "", x = names(df_new))
-names(df_new) = gsub(pattern = "V7_*", replacement = "", x = names(df_new))
-
-names(df_new) = gsub(pattern = "'*", replacement = "", x = names(df_new))
-names(df_new) = gsub(pattern = " ", replacement = "", x = names(df_new))
+encoded_data <- encoded_data %>% select(-categorical_columns)
+names(encoded_data) = gsub(pattern = "V1_*", replacement = "", x = names(encoded_data))
+names(encoded_data) = gsub(pattern = "V2_*", replacement = "", x = names(encoded_data))
+names(encoded_data) = gsub(pattern = "V3_*", replacement = "", x = names(encoded_data))
+names(encoded_data) = gsub(pattern = "V4_*", replacement = "", x = names(encoded_data))
+names(encoded_data) = gsub(pattern = "V5_*", replacement = "", x = names(encoded_data))
+names(encoded_data) = gsub(pattern = "V6_*", replacement = "", x = names(encoded_data))
+names(encoded_data) = gsub(pattern = "V7_*", replacement = "", x = names(encoded_data))
+names(encoded_data) = gsub(pattern = "'*", replacement = "", x = names(encoded_data))
+names(encoded_data) = trimws(names(encoded_data))
 ```
+
+
 
 
 ```{r}
@@ -199,9 +220,9 @@ shade_col <- c("wheat4")
 #but never needed them
 mb_ratio1 <- c(0.55,0.45)
 
-set_vars <- c("Christian","Adventure","Fiction","Architecture","History","Crime")
+set_vars <- c("Fiction","Historical Fiction","Sports")
 
-upset(df_new, 
+upset(encoded_data, 
 	sets = set_vars,
 	mainbar.y.label = "Counts by Pattern of Conditions", 
 	sets.x.label = "Counts by Condition",
@@ -215,6 +236,39 @@ upset(df_new,
 	matrix.color = matrix_col,
 	shade.color = shade_col)
 ```
+
+
+
+
+```{r}
+df_long$Genre <- str_replace(df_long$Genre,"'","")
+df_long$Genre <- str_replace(df_long$Genre,"'","")
+df_long$Genre <- str_replace(df_long$Genre," ","")
+#df_long <- df_long %>% select(-name)
+
+
+genre_matrix <- table(df_long$Book, df_long$Genre) > 0
+
+df_matrix <- as.data.frame(genre_matrix)
+set_vars <- unique(colnames(df_matrix))
+
+df_matrix <- df_matrix %>% rownames_to_column(var = "Book")
+
+
+
+df_matrix <- df_matrix %>% 
+  mutate(across(everything(), ~+as.logical(.x)))
+
+df_matrix <- df_matrix %>% select(-Book)
+
+set_vars <- unique(colnames(df_matrix))
+upset(df_matrix,
+      	sets = set_vars)
+```
+
+
+
+
 
 
 
