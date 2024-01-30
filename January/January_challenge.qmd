@@ -166,12 +166,19 @@ df_compact <- df %>% select(all_of(col_name))
 
 df_long <- df_compact %>% pivot_longer(cols = c("V1","V2","V3","V4","V5","V6","V7"),values_to = "Genre")
 
-df_new <- as.data.frame(one_hot(data.table(df_long),cols = "Genre"))
+df_new <- as.data.frame(one_hot(data.table(df_compact),cols = c("V1","V2","V3","V4","V5","V6","V7")))
 ```
 
 
 ```{r}
-names(df_new) = gsub(pattern = "Genre_*", replacement = "", x = names(df_new))
+names(df_new) = gsub(pattern = "V1_*", replacement = "", x = names(df_new))
+names(df_new) = gsub(pattern = "V2_*", replacement = "", x = names(df_new))
+names(df_new) = gsub(pattern = "V3_*", replacement = "", x = names(df_new))
+names(df_new) = gsub(pattern = "V4_*", replacement = "", x = names(df_new))
+names(df_new) = gsub(pattern = "V5_*", replacement = "", x = names(df_new))
+names(df_new) = gsub(pattern = "V6_*", replacement = "", x = names(df_new))
+names(df_new) = gsub(pattern = "V7_*", replacement = "", x = names(df_new))
+
 names(df_new) = gsub(pattern = "'*", replacement = "", x = names(df_new))
 names(df_new) = gsub(pattern = " ", replacement = "", x = names(df_new))
 ```
@@ -192,7 +199,7 @@ shade_col <- c("wheat4")
 #but never needed them
 mb_ratio1 <- c(0.55,0.45)
 
-set_vars <- c("Christian","Adventure","Fiction")
+set_vars <- c("Christian","Adventure","Fiction","Architecture","History","Crime")
 
 upset(df_new, 
 	sets = set_vars,
@@ -208,5 +215,6 @@ upset(df_new,
 	matrix.color = matrix_col,
 	shade.color = shade_col)
 ```
+
 
 
