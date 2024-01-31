@@ -42,6 +42,8 @@ df <- read_csv("data/goodreads_top100.csv")
 
 ```
 
+# Data cleaning and wrangling
+
 ```{r}
 df$Genres <- str_replace_all(df$Genres,"[\\[\\]]","")
 
@@ -118,7 +120,7 @@ names(encoded_data) = gsub(pattern = "'*", replacement = "", x = names(encoded_d
 names(encoded_data) = trimws(names(encoded_data))
 ```
 
-
+# EDA
 
 
 ```{r}
@@ -126,7 +128,7 @@ names(encoded_data) = trimws(names(encoded_data))
 df_long_vals <- df_long %>% group_by(Genre) %>% summarise(Total = n()) %>% arrange(-Total) %>% head(15)
 
 top_15 <- unique(df_long_vals$Genre)
-pl1 <- ggplot(data = df_long_vals,aes(x = reorder(Genre,-Total),y = Total)) + geom_col() + geom_label(aes(label = Total))
+pl1 <- ggplot(data = df_long_vals,aes(x = reorder(Genre,Total),y = Total)) + geom_col() + geom_label(aes(label = Total)) + coord_flip() + ggtitle("Top most books by genre")
 pl1
 ```
 
