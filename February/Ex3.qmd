@@ -18,3 +18,17 @@ df <- read_csv("data.csv",skip = 1)
 df_clean <- df %>% select(2:dim(df)[2]) %>% rename("Type" = "...2")
 ```
 
+```{r}
+df_long <- df_clean %>% pivot_longer(names_to = "Year",
+                                     values_to = "Percentage",cols = 2:5)
+```
+
+
+```{r}
+pl1 <- ggplot(data= df_long, aes(x = ))
+```
+
+```{r}
+
+```
+
