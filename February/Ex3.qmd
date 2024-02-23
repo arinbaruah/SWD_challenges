@@ -25,7 +25,8 @@ df_long <- df_clean %>% pivot_longer(names_to = "Year",
 
 
 ```{r}
-pl1 <- ggplot(data= df_long, aes(x = ))
+pl1 <- ggplot(data= df_long, aes(x = Year,y = Percentage,group = Type)) + geom_line()
+pl1
 ```
 
 ```{r}
