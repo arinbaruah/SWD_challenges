@@ -20,15 +20,17 @@ df_clean <- df %>% select(2:dim(df)[2]) %>% rename("Type" = "...2")
 
 ```{r}
 df_long <- df_clean %>% pivot_longer(names_to = "Year",
-                                     values_to = "Percentage",cols = 2:5)
+                                     values_to = "Percentage",cols = 2:5) %>% filter(Type != "Total")
 ```
 
 
 ```{r}
-pl1 <- ggplot(data= df_long, aes(x = Year,y = Percentage,group = Type,color = Type)) +
-  geom_line() + theme_economist() + geom_point() + geom_text(aes(label = Percentage),
-                                                           vjust = -0.5,size = 3) + labs(x = "Year",
-                                                                                y = "Percentage automation trend (%)",color = "Payment method") + theme(legend.text = element_text(size = 6),panel.background = element_rect(fill = 'cornsilk') )
+pl1 <- ggplot(data= df_long, aes(x = Year,y = Percentage,group = Type,shape = Type)) +
+  geom_line(color = "gray") + theme_economist() + geom_point(color = "black",size = 2) + geom_text(aes(label = Percentage),
+                                                           vjust = -0.5,size = 3,color = "gray") + labs(x = "Year",
+                                                                                y = "Percentage automation trend (%)") + theme(legend.text = element_text(size = 6),panel.background = element_rect(fill = 'cornsilk') ) + geom_line(data = ~filter(.x, Type == "Home Equity Line of Credit"), color = "darkgreen", size = 1)  + geom_text(data = filter(df_long, Year == 2023), aes(label = Type), vjust = -0.6,hjust = -0.05, size = 2, color = "black") 
+
+# Hide legend for color
 pl1 + guides(color = guide_legend(override.aes = list(label = c(""))))
 ```
 
