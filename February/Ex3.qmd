@@ -25,10 +25,27 @@ df_long <- df_clean %>% pivot_longer(names_to = "Year",
 
 
 ```{r}
-pl1 <- ggplot(data= df_long, aes(x = Year,y = Percentage,group = Type,shape = Type)) +
-  geom_line(color = "gray") + theme_economist() + geom_point(color = "black",size = 2) + geom_text(aes(label = Percentage),
-                                                           vjust = -0.5,size = 3,color = "gray") + labs(x = "Year",
-                                                                                y = "Percentage automation trend (%)") + theme(legend.text = element_text(size = 6),panel.background = element_rect(fill = 'cornsilk') ) + geom_line(data = ~filter(.x, Type == "Home Equity Line of Credit"), color = "darkgreen", size = 1)  + geom_text(data = filter(df_long, Year == 2023), aes(label = Type), vjust = -0.6,hjust = -0.05, size = 2, color = "black") 
+pl1 <-
+  ggplot(data = df_long, aes(x = Year, y = Percentage, group = Type)) +
+  geom_line(color = "gray") + theme_economist() + geom_point(color = "black", size = 2) + geom_text(
+    aes(label = Percentage),
+    vjust = -0.5,
+    size = 3,
+    color = "gray"
+  ) + labs(x = "Year",
+           y = "Percentage automation trend (%)") + theme(legend.text = element_text(size = 6),
+                                                          panel.background = element_rect(fill = 'cornsilk')) + geom_line(
+                                                            data = ~ filter(.x, Type == "Home Equity Line of Credit"),
+                                                            color = "darkgreen",
+                                                            size = 1
+                                                          )  + geom_text(
+                                                            data = filter(df_long, Year == 2023),
+                                                            aes(label = Type),
+                                                            vjust = -0.65,
+                                                            hjust = -0.05,
+                                                            size = 2.5,
+                                                            color = "black"
+                                                          )
 
 # Hide legend for color
 pl1 + guides(color = guide_legend(override.aes = list(label = c(""))))
