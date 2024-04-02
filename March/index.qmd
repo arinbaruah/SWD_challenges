@@ -1,0 +1,347 @@
+---
+title: "Annotated and high contrast plots 📊💡"
+author: "Arindam Baruah"
+date: "2024-01-31"
+image: "images/plot2-1.png"
+categories: [analysis,scatter plot,line plot,high contrast,annotations]
+format: html
+number-sections: true
+toc: true
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+
+![Source: Google](images/image_1.png){width="40%" height="30%"}
+
+```{r read-library,message=FALSE,warning=FALSE,echo=FALSE,class.source='watch-out'}
+
+library(tidyverse) #Reading all the required libraries for creating the Rmarkdown file
+library(ggplot2)
+library(rmarkdown)
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+library(plotly)
+library(ggthemes)
+library(viridis)
+library(RColorBrewer)
+```
+
+
+```{r read-csv,message=FALSE,echo=FALSE,include=FALSE}
+
+
+df_hours_vs_gdp <- read_csv('data/annual-working-hours-vs-gdp-per-capita-pwt.csv') #Read CSV file 
+df_prod_per_hour <-read_csv('data/labor-productivity-per-hour-PennWorldTable.csv')
+
+df_final <- merge(df_hours_vs_gdp,
+                  df_prod_per_hour,by=c('Entity','Code','Year'),all=TRUE) #Outer join
+head(df_final)
+```
+
+# Introduction
+
+The current dataset contains the __annual working hours per worker along with the population estimates of all the reporting countries__ dating from the start of the calendar year to 2021. The data source has been detailed on the __Our World In Data__ [website](https://ourworldindata.org).
+
+
+
+
+This is an important metric to track as the number of annual working hours is a strong indicator of the labor laws prevalent in the country along with the work-life balance for the various employees. High working hours invariably lead to higher health issues such as stress, anxiety, and depression. With the advent of strict labor laws for the welfare of employees, the current study will dive deeper into how long are employees from various countries and continents working as years have passed on and whether the long hours are indicating strong growth in the economy.
+
+# What are we looking to answer?
+
+The current study aims to answer some of the following pertinent questions:
+
+1. Which countries are reporting the highest annual working hours per employee? How have the annual working hours changed for these countries over time after stricter measures such as the implementation of labor codes in recent decades?
+2. How are the working hours different for countries with high productive economies (GDP) ? Do the annual working hours vary with population and how do countries with comparable populations such as China and India fare?
+3. Does working for longer hours directly mean that the productivity output of the economy is higher ? 
+
+# What is this dataset all about?
+
+The current dataset which has been sourced from the __Our World In Data__ website records the average annual working hours, state of economy (in terms of GDP), and population for a particular country over the years. In addition to these variables, the current dataset is merged with another dataset which contains important data on the ${productivity}/{hour}$ for the reporting countries. This measure in effect, tells us about the economic productivity of the country for every hour of work done by an employee __(in $/hour)__.
+
+The above-mentioned dataset can be obtained from the "Our World in Data" website through this [link](https://ourworldindata.org/rich-poor-working-hours).
+
+ @tbl-variable below shows the various variables present in our dataset.
+
+```{r variable,cache = TRUE}
+#| label: tbl-variable
+#| tbl-cap: "Data description"
+
+var <- data.frame(Variable = c(names(df_final))) #A dataframe for variables
+
+var %>% kbl() %>% 
+kable_styling(bootstrap_options = c("bordered","hover")) #Creating a table
+
+```
+
+
+
+
+# What can we infer from the data ?
+
+In order to answer some of the pertinent research questions, we will need to create visualizations that can help us understand the data better and allow us to draw inferences. The intuitive visualizations are created using the __ggplot2__ library which is based on the grammar of graphics. The documentation for the ggplot2 library can be  referred to in greater detail through this [link](https://ggplot2.tidyverse.org).
+
+@fig-plot1 is a scatter plot between the annual working hours and the GDP per capita of some of the nations of concern in the current study.
+
+
+```{r plot1}
+#| label: fig-plot1
+#| fig-cap: "Relation between annual working hours and GDP per capita"
+
+countries <- c('India','China','Switzerland','Australia','United States','Germany','France','United Kindgom','Luxembourg','Canada','Singapore') #Countries under consideration
+
+df_2019 <- df_final %>% select(c(`Year`,`Entity`,`Annual working hours per worker`,
+                                 `GDP per capita (output, multiple price benchmarks)`,
+                                 `Population (historical estimates)`)) %>% 
+  filter(Year==2019, `Annual working hours per worker`!='NA',
+         `GDP per capita (output, multiple price benchmarks)`!='NA',Entity %in% countries) %>% 
+  arrange(-`GDP per capita (output, multiple price benchmarks)`) #Filtering the data 
+
+options(scipen=1) #Removes scientific notation in the plot
+
+pl1<- ggplot(head(df_2019,10),aes(x=`GDP per capita (output, multiple price benchmarks)`,
+                                  y=`Annual working hours per worker`,
+                                  color=`Entity`,
+                                  label=Entity)) + 
+  labs(color= "Country") + 
+  geom_point(alpha=0.9,size=2) + 
+  geom_text(hjust=0.7,vjust=-0.7,size=4) + 
+  theme_economist() + 
+  theme(legend.position="none",plot.title = element_text(size = 20, face = "bold",hjust=0.5)) + 
+  ylim(1200,2500) + xlim(0,100000) + xlab('GDP Per capita (in $)') + 
+  ggtitle("Annual working hour vs GDP per capita") +
+  annotate("segment", x = 45000, xend = 45000, y = 1200, yend = 2500,
+           colour = "red",
+           alpha=0.6,
+           linetype=3) +
+  annotate("segment", x = 0, xend = 90000, y = 1800, yend = 1800,
+           colour = "red",
+           alpha=0.6,
+           linetype=3) +
+  annotate("text", x = 15000, y= 1500, 
+           colour = "black",
+           alpha=0.6,
+           label='Low hours and GDP per capita',
+           size = unit(3, "pt")) +
+  annotate("text", x = 15000, y= 2000, 
+           colour = "black",
+           alpha=0.6,
+           label='High hours and low GDP per capita',
+           size = unit(3, "pt")) +
+  annotate("text", x = 65000, y= 2000, 
+           colour = "black",
+           alpha=0.6,
+           label='High hours and GDP per capita',
+           size = unit(3, "pt")) +
+  annotate("text", x = 65000, y= 1500, 
+           colour = "black",
+           alpha=0.6,
+           label='Low hours and high GDP per capita',
+           size = unit(3, "pt")) +
+  theme(panel.background = element_rect(fill = 'lightyellow'),
+        panel.border = element_rect(colour = "black",size=3),
+        axis.title=element_text(size=14,face="bold")) #Plotting the graph
+print(pl1)
+
+
+
+```
+
+The annotations in @fig-plot1 provides us the relevant information, thereby allowing us to obtain important insights while analysing the data.
+
+:::{.callout-warning}
+# Information overload
+However, when creating a visualisation for a presentation, we are interested to only show the interesting bits to the audience. This not only allows us to concentrate our analysis on the salient data points, but also reduces cognitive load on the part of the audience, as a result of which, they're able to gauge the information easily, and are constantly following the presenter.
+
+Let us try to tweak our plot to make it more engaging for an audience.
+:::
+
+```{r plot1}
+#| label: fig-plot2
+#| fig-cap: "Relation between annual working hours and GDP per capita with high contrast"
+
+countries <- c('India','China','Switzerland','Australia','United States','Germany','France','United Kindgom','Luxembourg','Canada','Singapore') #Countries under consideration
+
+df_2019 <- df_final %>% select(c(`Year`,`Entity`,`Annual working hours per worker`,
+                                 `GDP per capita (output, multiple price benchmarks)`,
+                                 `Population (historical estimates)`)) %>% 
+  filter(Year==2019, `Annual working hours per worker`!='NA',
+         `GDP per capita (output, multiple price benchmarks)`!='NA',Entity %in% countries) %>% 
+  arrange(-`GDP per capita (output, multiple price benchmarks)`) #Filtering the data 
+
+options(scipen=1) #Removes scientific notation in the plot
+
+country_low <- c("India","China")
+country_high <- c("Singapore")
+
+pl1<- ggplot(df_2019,aes(x=`GDP per capita (output, multiple price benchmarks)`,
+                                  y=`Annual working hours per worker`,
+                                  label=Entity)) + 
+  labs(color= "Country") + 
+  geom_point(alpha=0.9,size=2,color='lightgray') + 
+  geom_text(hjust=0.7,vjust=-0.7,size=4,alpha = 0.4) + 
+  geom_point(data = ~filter(.x, Entity %in% country_low),color = "darkred",size = 4) +
+  geom_text(data = ~filter(.x, Entity %in% country_low),hjust=0.7,vjust=-0.7,size=4,alpha = 0.4,color = "darkred") + 
+  geom_point(data = ~filter(.x, Entity %in% country_high),color = "darkgreen",size = 4) +
+  geom_text(data = ~filter(.x, Entity %in% country_high),hjust=0.7,vjust=-0.7,size=4,alpha = 0.4,color = "darkgreen") +
+  theme_economist() + 
+  theme(legend.position="none",plot.title = element_text(size = 20, face = "bold",hjust=0.5)) + 
+  ylim(1200,2500) + xlim(0,100000) + xlab('GDP Per capita (in $)') + 
+  ggtitle("Which countries are working overtime ?") +
+  annotate("segment", x = 45000, xend = 45000, y = 1200, yend = 2500,
+           colour = "red",
+           alpha=0.6,
+           linetype=3) +
+  annotate("segment", x = 0, xend = 90000, y = 1800, yend = 1800,
+           colour = "red",
+           alpha=0.6,
+           linetype=3) +
+  annotate("text", x = 15000, y= 1500, 
+           colour = "black",
+           alpha=0.7,
+           label='Low hours and GDP per capita',
+           size = unit(3, "pt")) +
+  annotate("text", x = 15000, y= 2000, 
+           colour = "black",
+           alpha=0.7,
+           label='High hours and low GDP per capita',
+           size = unit(3, "pt")) +
+  annotate("text", x = 65000, y= 2000, 
+           colour = "black",
+           alpha=0.7,
+           label='High hours and GDP per capita',
+           size = unit(3, "pt")) +
+  annotate("text", x = 65000, y= 1500, 
+           colour = "black",
+           alpha=0.7,
+           label='Low hours and high GDP per capita',
+           size = unit(3, "pt")) +
+  theme(panel.background = element_rect(fill = 'lightyellow'),
+        panel.border = element_rect(colour = "black",size=3),
+        axis.title=element_text(size=14,face="bold")) #Plotting the graph
+pl1
+
+
+```
+:::{.callout-note}
+# Key takeaway
+The high contrast of the data points, namely India, China and Singapore in @fig-plot2 which are the major outliers and need to be investigated further can be clearly distinguished from the other data points. This allows for the audience to quickly notice these points and follow the presenter's explanations better.
+
+Another change was the title of the plot to make it more interactive for the audience. While this works better in a presentation mode, plots which are a part of a report would benefit with a general title as observed in @fig-plot1.
+:::
+
+
+@fig-plot2 titled __"Annual working hour vs GDP per capita"__ represents a scatter plot with the X-axis containing the variable of __GDP Per capita (in $)__ and the Y-axis containing the variable of __Annual working hours per worker__. The plot has been created for a list of countries with well-established economies along with some of the manufacturing-based economies like China and India. Below are some of the key points observed that can provide answers to the research questions posed in section 3 :
+
+- _The scatterplot has been divided into 4 quadrants to facilitate the clustering of the various economies and the quadrants have been explained through the plot annotation. We can observe that the emerging developing nations with comparable populations such as **India and China** are reporting considerably higher annual working hours than the other major developed economies. This could be a result of the **lack of strict labor codes** prevalent in these countries leading to highly overworked employees._
+
+- _**Singapore** is a developed economy with a very low population. Yet, the annual working hours are reported to be higher than all the developed nations as well as the developing economies of India and China. This could be attributed to the hectic working culture prevalent in the corporates of the country._   
+
+```{r plot3, fig.cap='Productivity: Gross Domestic Produce per hour of work (in $/hr)'}
+#| label: fig-plot3
+#| fig-cap: "Rise of productivity over time (in terms of GDP)"
+df_productivity <- df_final %>% select(c(`Entity`,`Year`,
+                                 `Productivity: output per hour worked`)) %>% 
+                                  filter(`Productivity: output per hour worked`!='NA',
+                                         Entity %in% countries) %>%
+                                  arrange(-`Productivity: output per hour worked`)
+
+pl2<- ggplot(df_productivity,aes(x=Year,y=`Productivity: output per hour worked`,color=Entity)) + 
+                                  geom_line(size=2) + geom_point(size=3) + theme_economist() + labs(color='Country') + 
+ 
+  ggtitle("Productivity over the years") + 
+  ylab("Productivity : in GDP $/Hour") + 
+  scale_color_brewer(palette = "Set3") + 
+  theme(panel.background = element_rect(fill = '#CCFFFF'),
+        plot.title = element_text(size = 25,
+        face = "bold",hjust=0.5),
+        legend.key.size = unit(0.25, 'cm'),
+        panel.border = element_rect(colour = "black",size=3),
+        axis.title=element_text(size=14,face="bold")) +
+  annotate("text", x = 1970, y= 60, 
+           colour = "black",
+           alpha=0.6,
+           label='Overall rising trend of productivity',
+           size = unit(4, "pt")) +
+  annotate("text", x = 2000, y= 15, 
+           colour = "black",
+           alpha=0.6,label='Comparatively low rising trend in productivity for China and India',
+           size = unit(3, "pt"))
+print(pl2)
+```
+
+Similar to our previous attempts, while @fig-plot3 provides us with an illustration of rising productivity over time, the plot is too cluttered and is difficult to follow.
+
+Let us simplify this plot further using the same techniques as before.
+
+
+```{r}
+#| label: fig-plot4
+#| fig-cap: "Rise of productivity over time (in terms of GDP)"
+
+
+pl2 <- ggplot(df_productivity %>% filter(Entity != "India" & Entity != "China" & Entity != "Singapore" ), aes(x = Year, y = `Productivity: output per hour worked`, group = Entity)) + 
+  geom_line(size = 2, color = "lightgray", alpha = 0.4) + 
+  geom_point(size = 3, color = "lightgray", alpha = 0.4) + 
+  theme_economist() + 
+  ggtitle("Countries with high annual working hours \n show a sluggish GDP productivity over time") + 
+  ylab("Productivity: in GDP $/Hour") + 
+  geom_point(data = filter(df_productivity, Entity %in% c("India", "China", "Singapore")), aes(color = Entity), size = 2) +
+  geom_line(data = filter(df_productivity, Entity %in% c("India", "China", "Singapore")), aes(color = Entity), size = 1) +
+  scale_color_manual(
+    values = c("India" = "orange", "China" = "darkred", "Singapore" = "darkgreen"),
+    name = "Country"
+  ) +
+  labs(colour = "Country") +
+  theme(panel.background = element_rect(fill = '#CCFFFF'),
+        plot.title = element_text(size = 12,
+        face = "bold",hjust=0.5),
+        legend.key.size = unit(0.25, 'cm'),
+        panel.border = element_rect(colour = "black",size=3),
+        axis.title=element_text(size=14,face="bold")) +
+  annotate("text", x = 1970, y= 60, 
+           colour = "black",
+           alpha=0.6,
+           label='Overall rising trend of productivity',
+           size = unit(4, "pt")) +
+  annotate("text", x = 2000, y= 15, 
+           colour = "black",
+           alpha=0.6,label='Comparatively low rising trend in productivity for China and India',
+           size = unit(2, "pt"))
+
+ggplotly(pl2)
+```
+
+:::{.callout-note}
+# Key takeaway
+@fig-plot4 titled __"Productivity over the years"__ represents a line chart containing a temporal analysis of the productivity of each of the selected nations from @fig-plot2. Productivity is defined as the contribution to the GDP (in $) for each hour worked by an employee. The following can be inferred from the plot :
+
+- _The temporal analysis for productivity (contribution to GDP in $) against the years indicates that there is a **steady increase in the contribution** towards GDP (in $) for all the countries under consideration. In essence, the temporal trend suggests that over the many decades of study, an hour of work done by an employee yields a higher contribution towards the nation's economy for every country._
+
+- _In figure @fig-plot2, it was established that **Singapore, China, and India** were the countries with the highest annual working hours. While intuitively, it may be hypothesized that higher working hours would mean greater productivity, however as per figure @fig-plot4 , it can be observed that **the productivity of the economy for these three countries were found to be lower than that of the other economies**. Therefore, longer working hours per employee does not necessarily contribute to higher productivity of the economy._
+:::
+# Conclusion
+
+The above study explored the various relations between the annual working hours of each country's economy, its GDP per capita  and the contribution towards the productivity of its economy. In order to create a condensed analysis of the major economies, a specific list of countries was curated and its results were visualised through @fig-plot2 and @fig-plot4 for inference. The study was observed to draw the following inferences delineated as follows :
+
+1. Emerging economies based on GDP per capita with similar populations such as China and India which are heavily dependent on their manufacturing industries were observed to have considerably higher annual working hours when compared to developed economies.This could be a result of the leaner labor codes enforced in these countries when compared to the developed economies.  
+
+2. While Singapore is a country with high GDP per capita and low population, it was observed to report higher annual working hours compared to China and India along with all other developed economies under consideration. This could be a result of the work culture in corporations based out of Singapore.
+
+3. A steady rise in the productivity of each nation under consideration was observed which essentially meant that an employee's hourly output has been increasing over time. 
+
+4. While Singapore, China, and India reported the highest annual working hours, it's productivity was observed to be lower than all other developed economies in the current study. This finding demonstrated that higher annual working hours do not necessarily lead to higher productivity in the economy.
+
+# References
+
+1. __ggplot2__: H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.
+2. __tidyverse__: Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J,
+  Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” _Journal of Open Source Software_, *4*(43),
+  1686 doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
+3. __plotly__ : C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC Florida, 2020.
+4. __kableExtra__: Zhu H (2021). _kableExtra: Construct Complex Table with 'kable' and Pipe Syntax_. R package version 1.3.4, <https://CRAN.R-project.org/package=kableExtra>.
+5. __viridis__: Simon Garnier, Noam Ross, Robert Rudis, Antônio P. Camargo, Marco Sciaini, and Cédric Scherer (2023). viridis(Lite) - Colorblind-Friendly Color Maps for R. viridis
+  package version 0.6.4.
