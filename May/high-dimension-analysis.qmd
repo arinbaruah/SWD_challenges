@@ -37,126 +37,6 @@ library(plotly)
 
 ![Source: Google images](high-dim.png)
 
-# Introduction
-
-In this analysis, we embark on a journey into the depths of cricket's data cosmos, where traditional metrics intertwine with cutting-edge analytics to reveal patterns, trends, and untold stories.
-
-Through advanced statistical techniques, machine learning algorithms, and data visualization tools, we transcend the boundaries of conventional analysis to uncover hidden correlations, identify key influencers, and predict future outcomes with unprecedented accuracy.
-
-From player profiling to match prediction, from tactical insights to strategic recommendations, our exploration of high-dimensional cricket data promises to redefine the way we understand, analyze, and appreciate this timeless sport. Join us as we delve into the heart of cricket's data universe and illuminate its myriad dimensions.
-
-# Methodology
-
-The goal of the current analysis is to analyse the high-dimensional data by applying linear as well as non-linear dimension reduction techniques which will allow us to simplify our model and obtain an understanding the complex data.
-
-Additionally, the study will make the use of a grand tour and a 3D scatter plot which will allow us to study sample data points in a high-dimensional space.
-
-:::{.callout-note}
-
-If you're interested to check out the code used for performing the current analysis, please check my GitHub repository [here](https://github.com/arinbaruah/Rinsights_blog/tree/main/docs/posts/blogs/High_dim_cricket_pca).
-:::
-
-# Visualisation 
-
-Here, we are required to visualise a high-dimensional data which contains 6 different variables. Due to the complexity of the data in hand and the multiple dimensions we are looking to study, it is often not possible to understand the correlation of each dimension through simple 2-dimensional plots such as scatter plots. Hence, we will be primarily studying the data through various high dimensional visualisation techniques, namely scatter plot matrix, UMAP and the grand tour.
-
-## a) 2D Scatter plot matrix
-
-```{r}
-#| label: fig-scatmat
-#| fig-cap: "2D scatter plot matrix"
-ggscatmat(c7)
-```
-:::{.callout-note}
-# Key takeaway
-
-Based on the scatter plot matrix as illustrated by @fig-scatmat, it is __difficult to ascertain any particular pattern__ when evaluating each of the pair of variables against one another. While there __appears to be a very weak relationship between X1 and X2 owing to a correlation of 0.45__, however, it is difficult to obtain any insight as the scatter points are __randomly spread out on the 2D space.__ The remaining pair of variables show even weaker correlation, __thereby indicating that each of the pair of variables are non-linearly related to one another.__
-:::
-
-## b) Non-linear dimension reduction using UMAP
-
-The uniform manifold approximation and projection (UMAP) compares the inter-point distances with what might be expected if the data was uniformly distributed in the high dimensional shapes.
-```{r}
-#| label: fig-umap
-#| fig-cap: "UMAP representation of the data"
-
-
-
-set.seed(253)
-c7_tidy_umap <- umap(c7, init = "spca")
-
-c7_tidy_umap_df <- c7_tidy_umap |>
-  as_tibble() |>
-  rename(UMAP1 = V1, UMAP2 = V2) 
-ggplot(c7_tidy_umap_df, aes(x = UMAP1, 
-                           y = UMAP2)) +
-  geom_point(colour = "#EC5C00") + theme_minimal()
-```
-
-:::{.callout-note}
-# Key takeaway
-
-Based on the UMAP representation of the data on a 2D space upon reducing the dimensions into UMAP1 and UMAP2, we can observe that the data points have segregated into two regions of the plane, thereby creating __two clusters__. 
-
-In @fig-umap, we observe that one of these clusters is easy to detect as most of the datapoints in this cluster are closely aggregated. However, for the other cluster, we can observe a wide variance in the data. This indicates that __not all the points are as closely aggregated for the second cluster, making it less well defined__. Additionally, the variance in the datapoints of the cluster could also indicate the __presence of outliers which will need to be investigated further.__  
-
-:::
-
-
-## c) High-dimensional data visualisation using the grand tour
-
-While we have already visualised the data on the 2D space by looking at the correlation among the variables, we now attempt to visualise the high-dimensional data in its true form by creating a tour which is an animation of the data points in the multi-dimensional space. The main advantage of this technique is that there is no information lost when drawing insights as we are effectively looking at all the data points in its original dimensions.
-
-
-
-```{r eval=FALSE}
-gif_file <- "animated_xy.gif"
-ani.options(interval = 0.1, ani.width = 500, ani.height = 400)
-
-saveGIF({
-  animate_xy(c7)
-}, movie.name = gif_file, interval = 0.1, ani.width = 500, ani.height = 400)
-
-```
-
-```{r}
-#| label: fig-c7gif
-#| fig-cap: "High-dimesional tour for the C7 dataset in the Mulgar package"
-image <- image_read("animated_xy.gif")
-image_animate(image)
-```
-
-:::{.callout-note}
-# Key takeaway
-
-- While analysing the tour as illustrated by @fig-c7gif, we can observe __the presence of a particular cluster of points which are concentrated close to one another.__ This was previously detected in @fig-umap aswell.
-
-- In addition to the above finding, we can also observe that the __points other than those in the identified cluster appear to be entirely on the plane generated by the axes X1 and X2 with high dispersion and variance__. This information was not possible to obtain from the UMAP representation due to its inherent functionality of reducing all the available dimensions to two dimensions. Additionally, the dispersion and the variance observed in the second cluster is much more pronounced and evident than the UMAP representation. 
-
-- The set of data points in the second cluster __aggregate together to form a U-shaped group.__ However, the __variance in these points are high and scattered across the plane.__ This indicates that while __most points tend to group as the U-shaped cluster, there are multiple outliers to be considered too.__
-
-- There also appears to be a particular orientation of the dimensions when the scatter points __are linearly arranged__. This was observed __through a combination of the dimensions X3,X5 and X6__.
-
-:::
-
-
-
-# Dimension reduction 
-
-In this exercise, we are required to analyse a dataset which contains multiple number of variables as illustrated by @tbl-cricket. 
-
-```{r}
-#| label: tbl-cricket
-#| tbl-cap: "A sample of the high-dimensional data containing statistics of Women's Cricket"
-
-df_cricket <- read_csv("auswt20.csv")
-
-df_cricket %>% head() %>% kbl() 
-```
-
-In order to obtain insights from the data, we need to study the various variables in the current dataset. However, with the high number of variables present, it makes it extremely complicated to individually study each pair of variables.
-
-In this exercise, we will apply a dimensionality reduction technique called the Principal Componenent Analysis (PCA). This technique is based on creating a linear combination of the variables such that the variance in the data is maximised, and are mutually uncorrelated. 
 
 ## Implementation of PCA in the current dataset
 
@@ -164,6 +44,8 @@ The chunk below provides the code required to compute the PCA for the current da
 
 ```{r}
 #| echo: TRUE
+
+df_cricket <- read_csv("cricket_pca.csv") %>% select(-c(PC1,PC2,PC3,Start,End))
 cricket_pca <- prcomp(df_cricket[,2:dim(df_cricket)[2]],scale=TRUE)
 ```
 
@@ -310,9 +192,9 @@ The biplot which has been illustrated through @fig-biplot allows us to understan
 #| fig-cap: "PC distribution of each player"
 df_cricket_pca <- cbind(df_cricket,cricket_pca$x[,1:2])
 
-pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_point() + 
-  labs(x = "PC1 (44.69%)",y = "PC2 (21.2 %)",title = "PC distribution of cricket players") + 
-  geom_vline(xintercept = -7.5, linetype = 3,color = "red",size = 1,alpha = 0.4) + 
+pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_point()  + 
+  labs(x = "PC1 (Batting qualities)",y = "PC2 (Bowling qualities)",title = "PC distribution of cricket players") + 
+  geom_vline(xintercept = -7, linetype = 3,color = "red",size = 1,alpha = 0.4) + 
   geom_hline(yintercept = - 5,linetype = 3,color = "red",size = 1,alpha = 0.4) + 
   annotate("text", x = -9, y= 0, 
            colour = "darkred",
@@ -334,7 +216,9 @@ pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_poi
            alpha=0.6,
            label='General ability players',
            size = unit(5, "pt")) +
-  theme_minimal() 
+    theme_minimal() +
+  theme(plot.background = element_rect(fill = "steelblue")) 
+
 
 ggplotly(pl,tooltip = c("Player","PC1","PC2"))
 
