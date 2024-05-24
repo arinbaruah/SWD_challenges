@@ -1,0 +1,54 @@
+---
+title: "🤔🕵🏻‍♀️ Simplifying the Scene: Streamlining Visualization Plots for Clarity 📊"
+categories: [data cleaning,exploratory data analysis,visualisation,line plots,annotations]
+author: "Arindam Baruah"
+date: "2024-02-29"
+image: "change.png"
+format: html
+number-sections: true
+execute: 
+  warning: false
+  echo: false
+  message: false
+---
+
+```{r}
+
+library(tidyverse)
+library(tidymodels)
+library(ggplot2)
+library(kableExtra)
+library(caret)
+library(plotROC)
+library(mulgar)
+library(tourr)
+library(GGally)
+library(uwot)
+library(animation)
+library(magick)
+library(ggfortify)
+library(plotly)
+```
+
+```{r}
+#| label: tbl-cricket
+#| tbl-cap: "A sample of the high-dimensional data containing statistics of Women's Cricket"
+
+df_cricket <- read_csv("auswt20.csv")
+
+df_cricket %>% head() %>% kbl() 
+```
+
+
+```{r}
+#| echo: TRUE
+cricket_pca <- prcomp(df_cricket[,2:dim(df_cricket)[2]],scale=TRUE)
+```
+
+
+```{r}
+#| label: fig-biplot
+#| fig-cap: "Biplot illustration of PC1 and PC2"
+ggplotly(autoplot(cricket_pca, loadings = TRUE, 
+         loadings.label = TRUE) + theme_minimal())
+```
