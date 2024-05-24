@@ -32,6 +32,7 @@ library(animation)
 library(magick)
 library(ggfortify)
 library(plotly)
+library(ggrepel)
 ```
 
 
@@ -192,8 +193,13 @@ The biplot which has been illustrated through @fig-biplot allows us to understan
 #| fig-cap: "PC distribution of each player"
 df_cricket_pca <- cbind(df_cricket,cricket_pca$x[,1:2])
 
-pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_point()  + 
-  labs(x = "PC1 (Batting qualities)",y = "PC2 (Bowling qualities)",title = "PC distribution of cricket players") + 
+top_players <- c("EA Perry","M Schutt","JL Jonassen","BL Mooney","MM Lanning","AJ Healy")
+
+pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_point(color = "lightgray")  + 
+  geom_label_repel(data = filter(df_cricket_pca, Player %in% top_players), 
+             aes(label = Player),nudge_y = 0.85,nudge_x = -0.85) + geom_point(data = filter(df_cricket_pca, Player %in% top_players), 
+             color = "darkred",size =4) +
+  labs(x = "PC1 (Batting qualities)",y = "PC2 (Bowling qualities)",title = " Who are the top performing players in the Australian women's cricket team?") + 
   geom_vline(xintercept = -7, linetype = 3,color = "red",size = 1,alpha = 0.4) + 
   geom_hline(yintercept = - 5,linetype = 3,color = "red",size = 1,alpha = 0.4) + 
   annotate("text", x = -9, y= 0, 
@@ -211,16 +217,16 @@ pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_poi
            alpha=0.6,
            label='Top all-rounders',
            size = unit(5, "pt")) +
-   annotate("text", x = -5, y= 0, 
+   annotate("text", x = -4.5, y= 0, 
            colour = "black",
            alpha=0.6,
-           label='General ability players',
+           label='General performances',
            size = unit(5, "pt")) +
     theme_minimal() +
-  theme(plot.background = element_rect(fill = "steelblue")) 
+  theme(plot.background = element_rect(fill = "cornsilk"),plot.title = element_text(face = "bold")) 
 
-
-ggplotly(pl,tooltip = c("Player","PC1","PC2"))
+pl
+#ggplotly(pl,tooltip = c("Player","PC1","PC2"))
 
 
 ```
