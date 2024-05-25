@@ -191,6 +191,29 @@ The biplot which has been illustrated through @fig-biplot allows us to understan
 ```{r}
 #| label: fig-pcaplayer
 #| fig-cap: "PC distribution of each player"
+
+library(tidyverse)
+library(stringr)
+library(glue)
+library(ggrepel)
+library(ggplot2)
+library(ggtext)
+### |-  titles and caption ----
+# icons
+tt <- str_glue("#SWDchallenge: May 2024 &bull; Source: Australia Women's Cricket stats <br>")  
+li <- str_glue("<span style='font-family:fa6-brands'>&#xf08c;</span>")  
+gh <- str_glue("<span style='font-family:fa6-brands'>&#xf09b;</span>")
+mn <- str_glue("<span style='font-family:fa6-brands'>&#xf4f6;</span>")
+
+# text
+title_text   <- str_glue("Decoding Popularity Trends of Family Guy Across Two Decades") 
+
+subtitle_text <- str_glue("Exploring how viewership and IMDb ratings have evolved across 21 seasons,<br> 
+                          highlighting key episodes and trends in audience engagement.")
+
+caption_text <- str_glue("{tt} {li} stevenponce &bull; {mn} @sponce1(graphic.social) &bull; {gh} poncest &bull; #rstats #ggplot2")
+
+
 df_cricket_pca <- cbind(df_cricket,cricket_pca$x[,1:2])
 
 top_players <- c("EA Perry","M Schutt","JL Jonassen","BL Mooney","MM Lanning","AJ Healy")
@@ -199,7 +222,7 @@ pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_poi
   geom_label_repel(data = filter(df_cricket_pca, Player %in% top_players), 
              aes(label = Player),nudge_y = 0.85,nudge_x = -1) + geom_point(data = filter(df_cricket_pca, Player %in% top_players), 
              color = "darkred",size =4) +
-  labs(x = "PC1 (Batting statistics)",y = "PC2 (Bowling statistics)",title = " Who are the top performing players in the \n Australian women's cricket team?") + 
+  labs(x = "PC1 (Batting statistics)",y = "PC2 (Bowling statistics)",title = " Who are the top performing players in the \n Australian women's cricket team?",caption = labs(caption = caption_text)) + 
   geom_vline(xintercept = -7, linetype = 3,color = "red",size = 1,alpha = 0.4) + 
   geom_hline(yintercept = - 5,linetype = 3,color = "red",size = 1,alpha = 0.4) + 
   annotate("text", x = -9, y= 0, 
