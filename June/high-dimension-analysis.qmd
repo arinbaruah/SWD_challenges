@@ -1,0 +1,397 @@
+---
+title: "Unlocking Insights: Navigating High-Dimensional Data Analysis for Actionable Intelligence"
+author: "Arindom Baruah"
+date: "2024-01-25"
+categories: [R,data cleaning,exploratory data analysis,high dimensional data visualisation,model metrics, principal decomposition, non-linear decomposition]
+image: "high-dim.png"
+quarto-required: ">=1.3.0"
+format:
+    html:
+        output-file: post.html
+execute: 
+  echo: false
+  message: false
+  warning: false
+number-sections: true
+---
+
+
+```{r}
+
+library(tidyverse)
+library(tidymodels)
+library(ggplot2)
+library(kableExtra)
+library(caret)
+library(plotROC)
+library(mulgar)
+library(tourr)
+library(GGally)
+library(uwot)
+library(animation)
+library(magick)
+library(ggfortify)
+library(plotly)
+library(ggrepel)
+```
+
+
+![Source: Google images](high-dim.png)
+
+
+## Implementation of PCA in the current dataset
+
+The chunk below provides the code required to compute the PCA for the current data.
+
+```{r}
+#| echo: TRUE
+
+df_cricket <- read_csv("cricket_pca.csv") %>% select(-c(PC1,PC2,PC3,Start,End))
+cricket_pca <- prcomp(df_cricket[,2:dim(df_cricket)[2]],scale=TRUE)
+```
+
+:::{.callout-note}
+We scale the dataset as show in the above code chunk by setting the `scale=TRUE` parameter. This is done in order to account for the varying scales present in the full dataset and prevent the variables with larger scales to dominate the variance in the data. By bringing all the variables to a common scale, we are able to ensure that each variable is equally contributing to the PCA transformation.
+
+:::
+
+### a) Summary of the PCA
+```{r}
+#| label: tbl-summary
+#| tbl-cap: "Summary of the PCA computation for Women's cricket data"
+
+cricket_pca_smry <- tibble(evl=cricket_pca$sdev^2) %>%
+  mutate(p = evl/sum(evl), cum_p = cumsum(evl/sum(evl))) %>% t() 
+colnames(cricket_pca_smry) <- colnames(cricket_pca$rotation)
+rownames(cricket_pca_smry) <- c("Variance", "Proportion", "Cum. prop")
+kable(cricket_pca_smry, digits=2, align="r") %>% 
+  kable_styling(full_width = T) %>%
+  row_spec(0, color="white", background = "#7570b3") %>%
+  column_spec(1, width = "2.5em", color="white", background = "#7570b3") %>%
+  column_spec(1:8, width = "2.5em") %>%
+  row_spec(3, color="white", background = "#CA6627")
+```
+
+@tbl-summary provides a succinct summary of the variance of each principal component and the proportion of variance explained by that particular principal component (PC).
+
+:::{.callout-note}
+# Key takeaway
+@tbl-summary would allow us to obtain the ideal number of PCs which would capture the most amount of variance in the data, at the same time, being able to discard some of the PCs which do not contribute much to explain the variance. In this manner, we not only obtain the important PCs, but also reduce the overall complexity of the model by reducing the overall dimension of the data.
+:::
+### b) Biplot generation for PC1 and PC2
+
+```{r}
+#| label: fig-biplot
+#| fig-cap: "Biplot illustration of PC1 and PC2"
+ggplotly(autoplot(cricket_pca, loadings = TRUE, 
+         loadings.label = TRUE) + theme_minimal())
+```
+@fig-biplot illustrates the biplot distribution for the first two PCs of the data. 
+
+:::{.callout-note}
+# Key takeaway
+
+Based on @fig-biplot, some of the key observations are as follows:
+
+
+- We can observe that there are variables such as __"wickets","four wickets" and "five wickets"__ which are pointing in the vertically downward direction and are also nearly parallel to one another. __This indicates that these set of variables influence the PC2 variable strongly and are highly correlated to one another__.
+
+- On the other hand, variables such as __"Innings","Not outs", "Strike rate","Sixes","Ducks","High score","Balls faced","Hundreds","Fifties__ etc, points towards approximately in the orthogonal direction to the set of variables mentioned in the previous bullet point. This means that these set of variables contribute __towards the PC1 variable and are also correlated as they are observed to be pointing generally in a similar direction.__
+
+:::
+
+
+### c) Choosing the appropriate number of PCs
+
+
+```{r}
+#| label: fig-scree
+#| fig-cap: "Scree plot for plotting the variance explained by each addition of PC"
+
+x_scale <- 1:21
+ggscree(cricket_pca, q=21) + labs(x = "Number of PCs",y = "Variance explained",title = "Scree plot for the number of PC determination") + geom_vline(xintercept = 4,linetype = 3,color = "red",size = 1.5) + geom_vline(xintercept = 3,linetype = 3,color = "darkgreen",size = 1.5) + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) +
+  scale_x_continuous(breaks = x_scale)
+
+
+```
+The scree plot as illustrated by @fig-scree indicates the variance explained with the addition of each PC. Based on this plot and @tbl-summary, we can clearly observe that the first __3 to 4 PCs are able to explain nearly 81% of variance in the data.__ An addition of the another PC is observed explain further variance, but to a lower degree. This indicates that __adding more PCs isn't necessarily explaining much variance in the data but making the model complex and difficult to interpret.__
+
+The guide line shaded in gray color is computed by performing PCA on 100 samples from a standard P-dimensional normal distribution. __A deviation of the black line from the gray line indicates that the variance explained by the PCAs are indeed significant and need to be considered in our analysis.__
+
+Additionally, we observe that the PCs from the __5th PC and onwards follow the guideline very closely. This indicates that the variance explained by these PCs do not explain any significant variation of the data.__
+
+:::{.callout-note}
+# Key takeaway
+
+Upon analysing the Scree plot, we can choose the first __3 or 4 PCs__ as our desired choice of PCs after successful dimensional reduction.
+
+Usage of __first 3 PCs would help us explain 75% of the variance but also make the model less complex than a model with 4 PCs.__
+
+Choosing the __first 4 PCs would allow us to explain 81% of the variance at the cost of higher complexity.__
+
+Hence, the final choice of the number of PCs to be selected would depend on either if we want to prioritise low complexity in the model or prioritise the maximum variance to be explained.
+
+:::
+
+
+While we have already studied the model using 2 PCs through @fig-biplot, we can additionally visualise the first 3 PCs using an interactive 3D scatter plot as shown in @fig-scatter3d.
+
+
+```{r}
+#| label: fig-scatter3d
+#| fig-cap: '3D Interactive Scatter plot matrix for PC distribution of each player'
+
+df_cricket_new <- read_csv("cricket_pca.csv")
+df_cricket_new$Total_PCA <- abs(df_cricket_new$PC1) + abs(df_cricket_new$PC2) + abs(df_cricket_new$PC3)
+
+pl2 <- plot_ly(df_cricket_new, x = ~PC1, y = ~PC2, z = ~PC3,
+               opacity = 1, hoverinfo = "text",
+               color = df_cricket_new$Total_PCA,colors = "viridis",
+               text = ~paste("Player: ", Player, "<br>",
+                             "PC1: ", round(PC1,3), "<br>",
+                             "PC2: ", round(PC2,3), "<br>",
+                             "PC3: ", round(PC3,3), "<br>")) %>%
+  layout(scene = list(xaxis = list(title = "PC1"),
+                      yaxis = list(title = "PC2"),
+                      zaxis = list(title = "PC3")),
+         margin = list(l = 0, r = 0, b = 0, t = 0),
+         title = list(text = "Interactive plot to study datapoints from varying directions \n corresponding to each PC",
+                      yanchor = "top", y = 0.95))
+pl2
+```
+
+:::{.callout-note}
+# Key takeaway
+
+Based on our analysis of the 3 PCs in @fig-scatter3d, we can observe that __while most players cluster into one region as shown by the dark blue shaded points, there are however some outliers in the data which suggest that these players have better cricketing statistics in certain domains than the rest of the set of players.__
+
+These players are highlighted through the light colored data points in the plot and are analysed further in @sec-interpretation.
+:::
+
+
+### d) Interpretation of the PCs 
+
+The biplot which has been illustrated through @fig-biplot allows us to understand the magnitude of contribution through the length of the loading vectors and the correlation among the variables by observing the angle made by each of the loading vectors to one another. Upon closely examining these loading vectors, we can obtain a few key interpretations of the PCs listed below.
+
+:::{.callout-note}
+# Key takeaway
+
+- Based on the understanding of the cricketing terminologies, it can be inferred that __PC2__ is heavily influenced by the variables that __relate to bowling in a game of cricket__.
+
+- On the other hand, __PC1__ is primarily influenced by variables which __relate to batting in the game__.
+
+- There are variables such as __"Start","Economy" and "Average"__ whose loading vector lengths are __considerably smaller__ than the other variables. This indicates that the effect of these variables on the respective PC is much __lower than some of the other variables mentioned in the plot.__
+
+- There also appears to be __lower correlation among each variable in the direction of PC1__ as the loading directions of the variables (shown by the <span style=color:red>red arrows</span>) are __much more spread out than the case for variables in the PC2 direction.__ This additionally reinforces the fact that PC1 accounts for majority of the variance in the data (nearly 45 %).
+
+:::
+
+### e) Main patterns observed during PCA {#sec-interpretation}
+
+```{r}
+#| label: fig-pcaplayer
+#| fig-cap: "PC distribution of each player"
+
+library(tidyverse)
+library(stringr)
+library(glue)
+library(ggrepel)
+library(ggplot2)
+library(ggtext)
+library(showtext)
+
+sysfonts::font_add(family = "Font Awesome 6 Brands",
+                   regular = "fontawesome/otfs/Font Awesome 6 Brands-Regular-400.otf")
+showtext::showtext_auto()
+
+### |-  titles and caption ----
+# icons
+tt <- str_glue("#SWDchallenge: May 2024")  
+
+df_cricket_pca <- cbind(df_cricket,cricket_pca$x[,1:2])
+
+top_players <- c("EA Perry","M Schutt","JL Jonassen","BL Mooney","MM Lanning","AJ Healy")
+
+github_icon <- "&#xf09b"
+github_username <- "arinbaruah"
+
+linkedin_icon <- "&#xf0e1"
+linkedin_username <- "Arindam Baruah"
+
+
+
+social_caption <- glue::glue(
+  "<span style='font-family:\"Font Awesome 6 Brands\";'>{github_icon};</span>
+  <span style='color: #E30B5C'>{github_username}</span>
+<span style='font-family:\"Font Awesome 6 Brands\";'>{linkedin_icon};</span>
+<span style='color: #E30B5C'>{linkedin_username}</span>
+{tt}"
+  )
+
+
+pl <- ggplot(data = df_cricket_pca,aes(x = PC1,y =PC2,text = Player)) + geom_point(color = "lightgray")  + 
+  geom_label_repel(data = filter(df_cricket_pca, Player %in% top_players), 
+             aes(label = Player),nudge_y = 0.85,nudge_x = -1) + geom_point(data = filter(df_cricket_pca, Player %in% top_players), 
+             color = "darkred",size =4) +
+  labs(x = "PC1 (Batting statistics)",y = "PC2 (Bowling statistics)",title = " Who are the top performing players in the \n Australian women's cricket team?",caption = labs(caption = social_caption)) + 
+  geom_vline(xintercept = -7, linetype = 3,color = "red",size = 1,alpha = 0.4) + 
+  geom_hline(yintercept = - 5,linetype = 3,color = "red",size = 1,alpha = 0.4) + 
+  annotate("text", x = -9, y= 0, 
+           colour = "darkred",
+           alpha=0.6,
+           label='Top batters',
+           size = unit(5, "pt")) +
+    annotate("text", x = -5, y= -8, 
+           colour = "darkblue",
+           alpha=0.6,
+           label='Top bowlers',
+           size = unit(5, "pt")) +
+  annotate("text", x = -9, y= -8, 
+           colour = "darkgreen",
+           alpha=0.6,
+           label='Top all-rounders',
+           size = unit(5, "pt")) +
+   annotate("text", x = -4.5, y= 0, 
+           colour = "black",
+           alpha=0.6,
+           label='General performances',
+           size = unit(5, "pt")) +
+    theme_minimal() +
+  theme(plot.background = element_rect(fill = "cornsilk"),
+plot.title = element_text(face = "bold",hjust=0.5),
+plot.caption = element_textbox_simple()) 
+
+pl
+#ggplotly(pl,tooltip = c("Player","PC1","PC2"))
+
+
+```
+
+```{r}
+
+font_add('fa6-brands', 'fontawesome/otfs/Font Awesome 6 Brands-Regular-400.otf') 
+font_add_google("Oswald", regular.wt = 400, family = "title")                 
+font_add_google("Quattrocento Sans", regular.wt = 400, family = "subtitle")  
+font_add_google("Quattrocento Sans", regular.wt = 400, family = "text")        
+font_add_google("Noto Sans", regular.wt = 400,family = "caption")
+showtext_auto(enable = TRUE)  
+
+theme_set(theme_minimal(base_size = 12, base_family = "text"))                
+
+theme_update(
+  plot.title.position   = "plot",
+  plot.caption.position = "plot",
+  legend.position       = 'plot',
+  plot.margin           = margin(t = 10, r = 15, b = 0, l = 15),
+  plot.background       = element_rect(fill = bkg_col, color = bkg_col),
+  panel.background      = element_rect(fill = bkg_col, color = bkg_col),
+  axis.title.x          = element_text(margin = margin(10, 0, 0, 0), size = rel(1), color = text_col, family = 'text', face = 'bold'),
+  axis.title.y          = element_text(margin = margin(0, 10, 0, 0), size = rel(1), color = text_col, family = 'text', face = 'bold'),
+  axis.text             = element_text(size = rel(1), color = text_col, family = 'text'),
+  panel.grid.minor.y    = element_blank(),
+  panel.grid.major.y    = element_line(linetype = "dotted", linewidth = 0.1, color = 'gray40'),
+  panel.grid.minor.x    = element_blank(),
+  panel.grid.major.x    = element_blank(),
+  axis.line.x           = element_line(color = "#d7d7d8", linewidth = .2),
+)
+
+### |- plot aesthetics ---- 
+bkg_col      <- colorspace::lighten('#f7f5e9', 0.05)    
+title_col    <- "#3d3d3d"           
+subtitle_col <- "#3d3d3d"     
+caption_col  <- "gray30"   
+text_col     <- colorspace::darken("#8e8a7b" , 0.2)   
+
+pl +
+  theme(
+    #plot.title.position   = "plot",
+    #plot.caption.position = "plot",
+    #legend.position       = "plot",
+    
+    plot.margin           = margin(t = 10, r = 15, b = 0, l = 15),       
+    plot.background       = element_rect(fill = bkg_col, color = bkg_col),
+    panel.background      = element_rect(fill = bkg_col, color = bkg_col),
+    
+    plot.title            = element_text(
+      size                = rel(2),
+      family              = "title",
+      face                = "bold",
+      color               = title_col,
+      lineheight          = 1.1,
+      margin              = margin(t = 5, b = 5)
+    ),        
+    plot.subtitle         = element_markdown(
+      size                = rel(1.1), 
+      family              = 'subtitle',
+      color               = subtitle_col,
+      lineheight          = 1.4, 
+      margin              = margin(t = 5, b = 1)
+    ),
+  )
+```
+
+
+
+:::{.callout-note}
+# Key takeaway
+The distribution of data points as observed in the illustration @fig-pcaplayer provides us with an understanding of the abilities of each player. Some of the key observations from the plot are as follows:
+
+- Majority of the data points cluster towards the top right of the plot, __indicating the general abilities of the players lie in this region.__ Based on this, we can conclude that the PC1 and PC2 attributes of most players would lie close to the origin point (0,0).
+
+- However, when observing the players on the X-axis (along the PC1 axis), we can observe that there are about three players to the left of the <span style=color:red>red line</span>. These players are namely __[BL Mooney](https://www.espncricinfo.com/cricketers/beth-mooney-381258), [MM Lanning](https://en.wikipedia.org/wiki/Meg_Lanning) and [AJ Healy](https://www.espncricinfo.com/cricketers/alyssa-healy-275486).__ As already explained in @sec-interpretation, a higher magnitude of value in PC1 relates to batting attributes. __Based on the PC1 magnitude and the loading vectors of these players, this indicates that these players would generally feature as the top batters in the team.__
+
+- When observing the players on the Y-axis (along the PC2 axis) and particularly at the points below the threshold <span style=color:red>red line</span>, we observe the players __[M Schutt](https://www.espncricinfo.com/cricketers/megan-schutt-420314)__ and __[JL Jonassen](https://www.espncricinfo.com/cricketers/jess-jonassen-374936)__ have a high PC2 magnitude while the PC1 magnitude is much lower in comparison. As discussed in @sec-interpretation, PC2 is heavily influenced by variables which are related to bowling. __This indicates that M Schutt's and JL Jonassen's attributes would most likely make them some of the top bowlers in the team.__
+
+- There are however players who may have __balanced attributes, indicating they're equally able to contribute to batting and bowling in a match__. These players are __generally termed as "All-rounders"__. While looking at the data, we can clearly point out __the player [EA Perry](https://en.wikipedia.org/wiki/Ellyse_Perry) who has a high PC1 and a PC2 score.__ This indicates that she is expected to be the top most __all-rounder in the Australian Women's Cricket team.__
+
+:::
+## References
+
+1. __tourr__: Hadley Wickham, Dianne Cook, Heike Hofmann, Andreas Buja
+  (2011). tourr: An R Package for Exploring Multivariate
+  Data with Projections. Journal of Statistical Software,
+  40(2), 1-18. URL http://www.jstatsoft.org/v40/i02/.
+  
+2. __tidymodels__:  Kuhn et al., (2020). Tidymodels: a collection of packages for modeling and machine learning using
+  tidyverse principles. https://www.tidymodels.org.  
+  
+3. __tidyverse__: Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M,
+  Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C,
+  Woo K, Yutani H (2019). “Welcome to the tidyverse.” _Journal of Open Source Software_, *4*(43), 1686.
+  doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
+  
+4. __kableExtra__: Zhu H (2024). _kableExtra: Construct Complex Table with 'kable' and Pipe Syntax_. R package version 1.4.0,
+  <https://CRAN.R-project.org/package=kableExtra>.
+  
+5. __caret__: Kuhn, M. (2008). Building Predictive Models in R Using the caret Package. Journal of Statistical Software, 28(5),
+  1–26. https://doi.org/10.18637/jss.v028.i05.
+
+6. __plotROC__: Michael C. Sachs (2017). plotROC: A Tool for Plotting ROC Curves. Journal of Statistical Software, Code Snippets,
+  79(2), 1-19. doi:10.18637/jss.v079.c02.
+
+7. __mulgar__: Cook D, Laa U (2023). _mulgar: Functions for Pre-Processing Data for Multivariate Data Visualisation using Tours_. R
+  package version 1.0.2, <https://CRAN.R-project.org/package=mulgar>.
+  
+8. __uwot__: Melville J (2023). _uwot: The Uniform Manifold Approximation and Projection (UMAP) Method for Dimensionality
+  Reduction_. R package version 0.1.16, <https://CRAN.R-project.org/package=uwot>.
+  
+9. __GGally__: Schloerke B, Cook D, Larmarange J, Briatte F, Marbach M, Thoen E, Elberg A, Crowley J (2024). _GGally: Extension to
+  'ggplot2'_. R package version 2.2.1, <https://CRAN.R-project.org/package=GGally>.
+
+10. __animation__: Yihui Xie (2013). animation: An R Package for Creating Animations and Demonstrating Statistical Methods. Journal of
+  Statistical Software, 53(1), 1-27. URL https://doi.org/10.18637/jss.v053.i01.
+  
+11. __magick__: Ooms J (2024). _magick: Advanced Graphics and Image-Processing in R_. R package version 2.8.3,
+  <https://CRAN.R-project.org/package=magick>.
+
+12. __plotly__: C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC Florida, 2020.
+
+13. __ggfortify__: Yuan Tang, Masaaki Horikoshi, and Wenxuan Li. "ggfortify: Unified Interface to Visualize Statistical Result of Popular R Packages." The R Journal 8.2 (2016): 478-489.
+
+14. OpenAI (2023). ChatGPT (version 3.5) [Large language model]. https://chat.openai.com/chat, full script of conversation [here](https://chat.openai.com/share/34c580ef-3332-4db5-8de3-7ff6b80a4a09)
+
+
+
+
+
+
