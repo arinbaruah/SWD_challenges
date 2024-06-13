@@ -34,6 +34,7 @@ library(ggfortify)
 library(plotly)
 library(ggrepel)
 library(FunnelPlotR)
+library(ggfunnel)
 ```
 
 ```{r}
@@ -53,4 +54,206 @@ fig <- fig %>%
 fig
 
 ```
+
+
+```{r}
+# Need to install plotly from Github to get funnel plots
+# devtools::install_github("ropensci/plotly")
+library(plotly)
+
+fig <- plot_ly(
+  type = "funnelarea",
+  values = c(5, 4, 3, 2, 1),
+  text = c("The 1st","The 2nd", "The 3rd", "The 4th", "The 5th"),
+  marker = list(colors = c("deepskyblue", "lightsalmon", "tan", "teal", "silver"),
+                line = list(color = c("wheat", "wheat", "blue", "wheat", "wheat"), width = c(0, 1, 5, 0, 4))),
+  textfont = list(family = "Old Standard TT, serif", size = 13, color = "black"),
+  opacity = 0.65)
+
+fig
+
+```
+
+
+```{r theme}
+
+# caption handles
+tt <- str_glue("#SWDchallenge: June 2024 &bull; Source: Australia Cricket Board<br>")  
+li <- str_glue("<span style='font-family:fa6-brands'>&#xf08c;</span>")  
+gh <- str_glue("<span style='font-family:fa6-brands'>&#xf09b;</span>")
+mn <- str_glue("<span style='font-family:fa6-brands'>&#xf4f6;</span>")
+
+
+# plot colors
+bkg_col      <- colorspace::lighten('#c2cd87', 0.05)    
+title_col    <- "#3d3d3d"           
+subtitle_col <- "#3d3d3d"     
+caption_col  <- "gray30"   
+text_col     <- colorspace::darken("#dbdeef" , 0.2)  
+
+# fonts
+
+font_add('fa6-brands', 'fontawesome/otfs/Font Awesome 6 Brands-Regular-400.otf') 
+font_add_google("Oswald", regular.wt = 400, family = "title")                 
+font_add_google("Quattrocento Sans", regular.wt = 400, family = "subtitle")  
+font_add_google("Quattrocento Sans", regular.wt = 400, family = "text")        
+font_add_google("Noto Sans", regular.wt = 400,family = "caption")
+showtext_auto(enable = TRUE)  
+
+caption_text <- str_glue("{tt} {li} Arindam Baruah ; {gh} arinbaruah ; #rstudio #ggfunnel #ggplot2")
+
+theme_set(theme_minimal(base_size = 12, base_family = "text"))                
+
+theme_update(
+  plot.title.position   = "plot",
+  plot.caption.position = "plot",
+  legend.position       = 'plot',
+  plot.margin           = margin(t = 10, r = 15, b = 0, l = 15),
+  plot.background       = element_rect(fill = bkg_col, color = bkg_col),
+  panel.background      = element_rect(fill = bkg_col, color = bkg_col),
+  axis.title.x          = element_text(margin = margin(10, 0, 0, 0), size = rel(1), color = text_col, family = 'text', face = 'bold'),
+  axis.title.y          = element_text(margin = margin(0, 10, 0, 0), size = rel(1), color = text_col, family = 'text', face = 'bold'),
+  axis.text             = element_text(size = 10, color = text_col, family = 'text',face = "bold"),
+  panel.grid.minor.y    = element_blank(),
+  panel.grid.major.y    = element_line(linetype = "dotted", linewidth = 0.1, color = 'gray40'),
+  panel.grid.minor.x    = element_blank(),
+  panel.grid.major.x    = element_blank(),
+  axis.line.x           = element_line(color = "#d7d7d8", linewidth = .2),
+)
+
+ 
+
+```
+
+
+
+```{r}
+library(ggfunnel)
+pl_funnel <- ggfunnel::funnel(
+    data = ggfunnel::aggregates,
+    tile_specs = list(
+    fill = "#24754d",
+    colour = "#7C9299",
+    alpha = 0.8,
+    height = 0.7
+  ),
+  text_specs = list(
+    colour = "#ccdce2",
+    size =3
+  ),
+    values = N_users, levels = Step
+  ) +
+  labs(
+       y = "PC2 (Bowling statistics)",
+       title = " Who are the top performing players in the \n Australian women's cricket team?",
+       caption = labs(caption = caption_text)) +
+  theme(
+    plot.title.position   = "plot",
+    plot.caption.position = "plot",
+    legend.position       = "plot",
+    
+    plot.margin           = margin(t = 10, r = 15, b = 0, l = 15),       
+    plot.background       = element_rect(fill = bkg_col, color = bkg_col),
+    panel.background      = element_rect(fill = bkg_col, color = bkg_col),
+    
+    plot.title            = element_text(
+      size                = rel(2),
+      family              = "title",
+      face                = "bold",
+      color               = title_col,
+      lineheight          = 1.1,
+      margin              = margin(t = 5, b = 5),
+      hjust               = 0.5
+    ),        
+    plot.subtitle         = element_markdown(
+      size                = rel(1.1), 
+      family              = 'subtitle',
+      color               = subtitle_col,
+      lineheight          = 1.4, 
+      margin              = margin(t = 5, b = 1)
+    ),
+    plot.caption          = element_markdown(
+      size                = rel(.65), 
+      family              = 'caption',
+      color               = caption_col,
+      lineheight          = 0.6,
+      hjust               = 0.5,
+      halign              = 0,
+      margin              = margin(t = 10, b = 10)
+    )
+  )
+pl_funnel
+```
+
+
+```{r}
+
+
+
+
+
+ggplot(data = df_cricket_pca,aes(x = PC1,y = PC2,text = Player)) + geom_point(color = "lightgray")  + 
+  geom_label_repel(data = filter(df_cricket_pca, Player %in% top_players),family = "subtitle",size =3, 
+             aes(label = Player),nudge_y = 0.85,nudge_x = -1) + geom_point(data = filter(df_cricket_pca, Player %in% top_players), 
+             color = "darkred",size =4) +
+  labs(x = "PC1 (Batting statistics)",y = "PC2 (Bowling statistics)",title = " Who are the top performing players in the \n Australian women's cricket team?",caption = labs(caption = caption_text)) + 
+  geom_vline(xintercept = -7, linetype = 3,color = "red",size = 1,alpha = 0.4) + 
+  geom_hline(yintercept = - 5,linetype = 3,color = "red",size = 1,alpha = 0.4) + 
+  annotate("text", x = -9, y= 0, 
+           colour = "darkred",
+           alpha=0.6,
+           label='Top batters',
+           size = unit(5, "pt")) +
+    annotate("text", x = -5, y= -8, 
+           colour = "darkblue",
+           alpha=0.6,
+           label='Top bowlers',
+           size = unit(5, "pt")) +
+  annotate("text", x = -9, y= -8, 
+           colour = "darkgreen",
+           alpha=0.6,
+           label='Top all-rounders',
+           size = unit(5, "pt")) +
+   annotate("text", x = -4.5, y= 0, 
+           colour = "black",
+           alpha=0.6,
+           label='General performances',
+           size = unit(5, "pt")) + labs(subtitle = "First team performances",caption = caption_text) +
+  theme(
+    plot.title.position   = "plot",
+    plot.caption.position = "plot",
+    legend.position       = "plot",
+    
+    plot.margin           = margin(t = 10, r = 15, b = 0, l = 15),       
+    plot.background       = element_rect(fill = bkg_col, color = bkg_col),
+    panel.background      = element_rect(fill = bkg_col, color = bkg_col),
+    
+    plot.title            = element_text(
+      size                = rel(2),
+      family              = "title",
+      face                = "bold",
+      color               = title_col,
+      lineheight          = 1.1,
+      margin              = margin(t = 5, b = 5),
+      hjust               = 0.5
+    ),        
+    plot.subtitle         = element_markdown(
+      size                = rel(1.1), 
+      family              = 'subtitle',
+      color               = subtitle_col,
+      lineheight          = 1.4, 
+      margin              = margin(t = 5, b = 1)
+    ),
+    plot.caption          = element_markdown(
+      size                = rel(.65), 
+      family              = 'caption',
+      color               = caption_col,
+      lineheight          = 0.6,
+      hjust               = 0.5,
+      halign              = 0,
+      margin              = margin(t = 10, b = 10)
+    )
+  )
+```
+
 
