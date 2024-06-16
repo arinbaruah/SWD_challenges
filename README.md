@@ -18,3 +18,6 @@ This repository contains all the attempted data visualisation challenges as a pa
 
 ![](https://github.com/arinbaruah/SWD_challenges/blob/main/May/high-dimension-analysis_files/figure-html/fig-pcaplayer-1.png)
 
+# June
+
+![](https://github.com/arinbaruah/SWD_challenges/blob/main/June/index_files/figure-html/unnamed-chunk-2-1.png)
