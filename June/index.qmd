@@ -30,7 +30,6 @@ library(uwot)
 library(animation)
 library(magick)
 library(ggfortify)
-library(plotly)
 library(ggrepel)
 library(FunnelPlotR)
 library(ggfunnel)
@@ -60,7 +59,7 @@ mn <- str_glue("<span style='font-family:fa6-brands'>&#xf4f6;</span>")
 bkg_col      <- colorspace::lighten('#c2cd87', 0.05)    
 title_col    <- "#3d3d3d"           
 subtitle_col <- "#3d3d3d"     
-caption_col  <- "gray30"   
+caption_col  <- "black"   
 text_col     <- colorspace::darken("#dbdeef" , 0.2)  
 
 # fonts
@@ -69,7 +68,7 @@ font_add('fa6-brands', 'fontawesome/otfs/Font Awesome 6 Brands-Regular-400.otf')
 font_add_google("Oswald", regular.wt = 400, family = "title")                 
 font_add_google("Quattrocento Sans", regular.wt = 400, family = "subtitle")  
 font_add_google("Quattrocento Sans", regular.wt = 400, family = "text")        
-font_add_google("Noto Sans", regular.wt = 400,family = "caption")
+font_add_google("Merriweather", regular.wt = 400,family = "caption")
 showtext_auto(enable = TRUE)  
 
 # Caption
@@ -168,6 +167,55 @@ pl_funnel <- ggfunnel::funnel(
     )
   )
 pl_funnel
+```
+
+
+
+
+```{r}
+library(f1dataR)
+lap_data <- load_laps(season = 2015,round = 3)
+```
+
+
+
+```{r}
+library(tidyverse)
+
+
+pl1 <- ggplot(lap_data,aes(x = driver_id,y = time_sec)) + geom_boxplot() 
+pl1
+```
+
+```{r}
+lap_data %>% filter(lap == max(lap))
+```
+
+
+```{r}
+df_circuit <- load_circuit_details(
+      season = get_current_season(),
+      round = 1,
+      log_level = "WARNING"
+)
+library(tidyverse)
+
+ggplot(df_circuit$corners,aes(x = x,y = y)) + geom_line()
+```
+
+```{r}
+
+lap_data <- load_laps(season = 2021,
+          round = 10)
+final_pos <- lap_data %>% filter(lap == max(lap)) %>% mutate(final_pos = position) %>% select(c(driver_id,final_pos))
+
+lap_data <- inner_join(lap_data,final_pos, by = "driver_id")
+
+lap_data <- lap_data %>% filter(time_sec < 100)
+
+ggplot(lap_data,aes(x = reorder(driver_id,as.integer(final_pos)),y = time_sec)) + geom_boxplot()
+
+
 ```
 
 
