@@ -21,3 +21,7 @@ This repository contains all the attempted data visualisation challenges as a pa
 # June
 
 ![](June/index_files/figure-html/unnamed-chunk-2-1.png)
+
+# November
+
+![][(https://github.com/arinbaruah/SWD_challenges/blob/main/November/Remake_Tidytuesday.png)
