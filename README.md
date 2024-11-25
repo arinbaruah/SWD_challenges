@@ -24,4 +24,4 @@ This repository contains all the attempted data visualisation challenges as a pa
 
 # November
 
-![][(https://github.com/arinbaruah/SWD_challenges/blob/main/November/Remake_Tidytuesday.png)
+![](https://github.com/arinbaruah/SWD_challenges/blob/main/November/Remake_Tidytuesday.png)
