@@ -17,6 +17,7 @@ library(showtext)
 library(ggbump)
 library(gghighlight)
 library(MetBrewer)
+library(ggstream)
 
 # caption handles
 swd <- str_glue("#SWDchallenge: June 2024 &bull; Source: Synthetic data from ChatGPT<br>")  
@@ -26,7 +27,7 @@ mn <- str_glue("<span style='font-family:fa6-brands'>&#xf4f6;</span>")
 tt <- str_glue("#TidyTuesdayR: November 2024 &bull; Source: US Customs and Border Protection (CBP) <br>") 
 
 # plot colors
-bkg_col      <- "#EAB1CA"  
+bkg_col      <- "cornsilk"  
 title_col    <- "#3d3d3d"           
 subtitle_col <- "#3d3d3d"     
 caption_col  <- "#72647D"   
@@ -105,5 +106,58 @@ pop_data_long_grouped <- pop_data_long %>%
   summarise(Total_population = sum(Population)) 
 
 
+```
+
+# Data Viz
+
+```{r}
+
+
+
+continent_colors <- c("Africa" = "#E63946",
+            "Asia" = "#F4A261" ,
+            "Europe" = "#2A9D8F" ,
+            "North America" = "#264653",
+            "Oceania" = "#E9C46A" ,
+            "South America" = "#457B9D" )
+
+label_positions <- tibble(
+  Continent = c("Africa", "Asia", "Europe", "North America", "Oceania","South America"),
+  # X positions for vertical alignment
+  x_position = c(2000, 1980, 2008, 2011, 2013,2015),
+  # Label positions - extending beyond the streams
+  y_position = c(8*10^9, 8*10^9, 45000, 60000, -60000,50000),  
+  # Stream connection points - where the lines should touch the streams
+  y_start = c(3*10^9, 0, 8000, 8000, -30000,10000)    
+)
+
+pl <- ggplot(pop_data_long_grouped, 
+       aes(x = Year, 
+           y = Total_population, 
+           fill = Continent, 
+           group = Continent,
+           )) +
+  geom_stream(
+    type = "mirror",
+    bw = 0.85,
+    extra_span = 0.2
+  ) + 
+   geom_segment(
+    data = label_positions,
+    aes(
+      x = x_position,
+      y = y_start,
+      xend = x_position,
+      yend = y_position
+    ),
+    color = text_col,
+    linewidth = 0.3,
+    linetype = "solid"
+  ) +
+  scale_fill_manual(values = continent_colors) +
+  labs(caption = caption_text) +
+  theme(plot.caption = element_markdown())
+
+pl
 ```
 
