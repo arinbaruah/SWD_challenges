@@ -18,7 +18,7 @@ library(ggbump)
 library(gghighlight)
 library(MetBrewer)
 library(ggstream)
-
+library(ggforce)
 # caption handles
 swd <- str_glue("#SWDchallenge: June 2024 &bull; Source: Synthetic data from ChatGPT<br>")  
 li <- str_glue("<span style='font-family:fa6-brands'>&#xf08c;</span>")  
@@ -112,34 +112,36 @@ pop_data_long_grouped <- pop_data_long %>%
 
 ```{r}
 
-
+options(scipen = 999)
 
 continent_colors <- c("Africa" = "#E63946",
             "Asia" = "#F4A261" ,
             "Europe" = "#2A9D8F" ,
-            "North America" = "#264653",
-            "Oceania" = "#E9C46A" ,
+            "North America" = "#6495ED",
+            "Oceania" = "#6E2C00" ,
             "South America" = "#457B9D" )
 
 label_positions <- tibble(
-  Continent = c("Africa", "Asia", "Europe", "North America", "Oceania","South America"),
+  Continent = c("Africa", "Asia", "Europe", "North America","South America","Oceania"),
   # X positions for vertical alignment
-  x_position = c(2000, 1980, 2008, 2011, 2013,2015),
+  x_position = c(2000, 1980,1990, 2013,2015,2021),
   # Label positions - extending beyond the streams
-  y_position = c(8*10^9, 8*10^9, 45000, 60000, -60000,50000),  
+  y_position = c(8, 8,-10,8,-10,-10),  
   # Stream connection points - where the lines should touch the streams
-  y_start = c(3*10^9, 0, 8000, 8000, -30000,10000)    
+  y_start = c(3, 0,-2.45, -3.5,-5.5,-8)    
 )
+
+highlight_point <- pop_data_long_grouped[pop_data_long_grouped$Year == 2020 & pop_data_long_grouped$Continent == "Oceania", ]
 
 pl <- ggplot(pop_data_long_grouped, 
        aes(x = Year, 
-           y = Total_population, 
+           y = Total_population/10^9, 
            fill = Continent, 
            group = Continent,
            )) +
   geom_stream(
     type = "mirror",
-    bw = 0.85,
+    bw = 0.8,
     extra_span = 0.2
   ) + 
    geom_segment(
@@ -151,9 +153,13 @@ pl <- ggplot(pop_data_long_grouped,
       yend = y_position
     ),
     color = text_col,
-    linewidth = 0.3,
+    linewidth = 0.8,
     linetype = "solid"
   ) +
+  ylim(-10,10) +
+  geom_circle(data = highlight_point, 
+              aes(x0 = 2021, y0 = -7.5, r = 0.5),  # Change r to adjust circle size
+              color = text_col, size = 1, inherit.aes = FALSE) + 
   scale_fill_manual(values = continent_colors) +
   labs(caption = caption_text) +
   theme(plot.caption = element_markdown())
