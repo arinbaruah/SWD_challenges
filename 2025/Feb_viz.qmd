@@ -51,7 +51,7 @@ subtitle_text <- "The U.S. Customs and Border Protection (CBP) has been managing
 
 X_icon <- glue("<span style='font-family:fa6-brands'>&#xe61b;</span>")
 
-caption_text <- str_glue("{li} Arindam Baruah | {X_icon} @wizsights | {gh} arinbaruah | Source: TidyTuesdayR | #wordcloud #rstudio #ggplot2")
+caption_text <- str_glue("{li} Arindam Baruah | {X_icon} @wizsights | {gh} arinbaruah | Source: GitHub | #rstudio #ggstream #ggplot2")
 
 theme_set(theme_minimal(base_size = 15, base_family = "text"))                
 
@@ -124,7 +124,7 @@ continent_colors <- c("Africa" = "#E63946",
 label_positions <- tibble(
   Continent = c("Africa", "Asia", "Europe", "North America","South America","Oceania"),
   # X positions for vertical alignment
-  x_position = c(2000, 1980,1990, 2013,2015,2021),
+  x_position = c(2000, 1980,1990, 2011,2013,2021),
   # Label positions - extending beyond the streams
   y_position = c(8, 8,-10,8,-10,-10),  
   # Stream connection points - where the lines should touch the streams
@@ -156,13 +156,28 @@ pl <- ggplot(pop_data_long_grouped,
     linewidth = 0.8,
     linetype = "solid"
   ) +
-  ylim(-10,10) +
+  
+  geom_text(
+    data = label_positions,
+    aes(
+      x = x_position,
+      y = y_position,
+      label = Continent
+    ),
+    size = 3.5,
+    fontface = "bold",
+    color = text_col,
+    vjust = ifelse(label_positions$y_position < 0, 1.2, -0.2)  
+  ) +
+  ylim(-12,12) +
   geom_circle(data = highlight_point, 
               aes(x0 = 2021, y0 = -7.5, r = 0.5),  # Change r to adjust circle size
               color = text_col, size = 1, inherit.aes = FALSE) + 
   scale_fill_manual(values = continent_colors) +
-  labs(caption = caption_text) +
-  theme(plot.caption = element_markdown())
+  labs(caption = caption_text,
+       x = "Year",
+       y = "Total Population (in billions)") +
+  theme(plot.caption = element_markdown(size = 11))
 
 pl
 ```
