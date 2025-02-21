@@ -36,17 +36,17 @@ text_col     <- colorspace::darken("gray40" , 0.2)
 # fonts
 
 font_add('fa6-brands','fontawesome/otfs/Font Awesome 6 Brands-Regular-400.otf') 
-font_add_google("Lato", regular.wt = 400, family = "title")                 
-font_add_google("Radley", regular.wt = 400, family = "subtitle")  
+font_add_google("Squada One", regular.wt = 400, family = "title")                 
+font_add_google("Merriweather", regular.wt = 400, family = "subtitle")  
 font_add_google("Quattrocento Sans", regular.wt = 400, family = "text")        
 font_add_google("Merriweather", regular.wt = 400,family = "caption")
 showtext_auto(enable = TRUE)  
 
 # Plot texts
 
-title_text <- "<span style='color:darkred'>US authorities recording high border encounters <br> across nationalities (2020-2024)</span>"
+title_text <- "<span style='color:darkred'>The Changing World: <br> Population Growth Across Continents</span>"
 
-subtitle_text <- "The U.S. Customs and Border Protection (CBP) has been managing record-high encounters with individuals of various nationalities at the U.S. borders. A chart highlighting the top 10 citizenships of inadmissible individuals at the southern and northern borders reveals that Mexican nationals remain the most frequently encountered. However, this marks the second consecutive decline in encounters involving Mexican citizens. While the numbers for most other nationalities have remained relatively stable, there has been a significant rise in encounters with individuals from Haiti and Venezuela, who were either apprehended for unauthorized border crossings or deemed inadmissible. "
+subtitle_text <- "As the years have passed, the world’s population landscape has transformed significantly. Asia has solidified its dominance, <br> now  <strong>home to nearly 6 in 10 people worldwide</strong>. Africa has surged ahead, surpassing Europe to become the second most <br> populous continent, reflecting rapid demographic growth. Meanwhile, <strong>Oceania remains the least populated region, <br> contributing just 0.5% of the global population</strong>, appearing as a thin sliver in the visualisation."
 
 
 X_icon <- glue("<span style='font-family:fa6-brands'>&#xe61b;</span>")
@@ -141,7 +141,7 @@ pl <- ggplot(pop_data_long_grouped,
            )) +
   geom_stream(
     type = "mirror",
-    bw = 0.8,
+    bw = 0.82,
     extra_span = 0.2
   ) + 
    geom_segment(
@@ -156,7 +156,6 @@ pl <- ggplot(pop_data_long_grouped,
     linewidth = 0.8,
     linetype = "solid"
   ) +
-  
   geom_text(
     data = label_positions,
     aes(
@@ -164,7 +163,7 @@ pl <- ggplot(pop_data_long_grouped,
       y = y_position,
       label = Continent
     ),
-    size = 3.5,
+    size = 12,
     fontface = "bold",
     color = text_col,
     vjust = ifelse(label_positions$y_position < 0, 1.2, -0.2)  
@@ -175,10 +174,83 @@ pl <- ggplot(pop_data_long_grouped,
               color = text_col, size = 1, inherit.aes = FALSE) + 
   scale_fill_manual(values = continent_colors) +
   labs(caption = caption_text,
+       title = title_text,
+       subtitle = subtitle_text,
        x = "Year",
        y = "Total Population (in billions)") +
-  theme(plot.caption = element_markdown(size = 11))
+  
+  theme(legend.position = "none",
+        panel.spacing = unit(3, "lines"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        plot.margin = margin(20, 20, 20, 20),
+    legend.title.position = "top",
+    legend.title = element_text(
+      color = text_col,
+      hjust = 0.5,
+      family = "text",
+      face = "bold",
+      size = rel(3.5),
+    ),
+    legend.text = element_markdown(
+      color = text_col,
+      family = "text",
+      size = rel(2),
+      face = "bold"
+    ),
+    plot.title            = element_markdown(
+      size                = rel(6),
+      family              = "title",
+      face                = "bold",
+      color               = title_col,
+      lineheight          = 0.2,
+      margin              = margin(t = 5, b = 5),
+      hjust               = 0.5
+    ),        
+    plot.subtitle         = element_markdown(
+      size                = 28, 
+      family              = 'subtitle',
+      color               = subtitle_col,
+      hjust               = 0,
+      lineheight          = 0.35, 
+      margin              = margin(t = 5, b = 1)
+    ),
+      plot.caption          = element_markdown(
+      size                = rel(1.5), 
+      family              = 'caption',
+      color               = caption_col,
+      lineheight          = 0.3,
+      hjust               = 0.5,
+      vjust               = -0.5,
+      halign              = 0,
+      margin              = margin(t = 10, b = 10)
+    ),
+    strip.text = element_markdown(
+      size                = rel(1.5),
+      family              = 'text',
+      face                = "bold"   
+    ),
+    axis.title = element_markdown(
+      size                = rel(2),
+      family              = "text"
+    ),
+    axis.text.y  = element_markdown(
+      size = rel(3)
+    ),
+    axis.text.x = element_markdown(
+      size = rel(3)
+    )
+  ) 
+
 
 pl
+
+ggsave("Population_change.jpeg",plot = pl,width =8, height = 5)
+```
+
+```{r}
+pop_data_long_grouped <- pop_data_long_grouped %>% filter(Year == max(Year)) %>% group_by(Year) %>% mutate(Current_population = sum(Total_population))
+pop_data_long_grouped %>% mutate(Population_proportion = 100*Total_population/Current_population)
 ```
 
