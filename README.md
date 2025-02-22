@@ -9,7 +9,7 @@ This repository contains all the attempted data visualisation challenges as a pa
 
 # February
 
-![](https://github.com/arinbaruah/SWD_challenges/blob/2024/main/February/beautiful_news.png)
+![](https://github.com/arinbaruah/SWD_challenges/blob/main/2024/February/beautiful_news.png)
 
 # March
 
